@@ -66,6 +66,7 @@
 #include <time.h>
 
 #include "NTPTime.h"
+#include "MessageFormatter.h"
 
 #include <systick.h>
 
