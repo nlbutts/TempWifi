@@ -44,6 +44,6 @@
 #ifndef __PINMUX_H__
 #define __PINMUX_H__
 
-extern void PinMuxConfig(void);
+extern void PinMuxConfig(int enableI2C);
 
 #endif //  __PINMUX_H__

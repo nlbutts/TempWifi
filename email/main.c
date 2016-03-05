@@ -49,6 +49,7 @@
 #include "timer_if.h"
 #include "gpio_if.h"
 #include "button_if.h"
+#include "utils_if.h"
 #include "common.h"
 #ifndef NOTERM
 #include "uart_if.h"
@@ -834,26 +835,59 @@ void SmartConfigInterruptHandler()
 }
 
 
-//*****************************************************************************
+//****************************************************************************
 //
-//! \brief     Email Application Main Task - Initializes SimpleLink Driver
-//!            and Handles UART Commands
+//! Enter the HIBernate mode configuring the wakeup timer
 //!
-//! \param    pvParameters        -    pointer to the task parameter
+//! \param none
 //!
-//! \return  void
-//! \note
-//! \warning
+//! This function
+//!    1. Sets up the wakeup RTC timer
+//!    2. Enables the RTC
+//!    3. Enters into HIBernate
+//!
+//! \return None.
 //
-//*****************************************************************************
-void SysTickInt()
+//****************************************************************************
+void EnterHIBernate(uint32_t wakeUpTimeInSeconds)
 {
-    g_secondCounter++;
+#define SLOW_CLK_FREQ           (32*1024)
+    //
+    // Configure the HIB module RTC wake time
+    //
+    MAP_PRCMHibernateIntervalSet(wakeUpTimeInSeconds * SLOW_CLK_FREQ);
+
+    //
+    // Enable the HIB RTC
+    //
+    MAP_PRCMHibernateWakeupSourceEnable(PRCM_HIB_SLOW_CLK_CTR);
+    PinMuxConfig(FALSE);
+
+    GPIO_IF_LedOff(MCU_ALL_LED_IND);
+
+    DBG_PRINT("HIB: Entering HIBernate...\n\r");
+    MAP_UtilsDelay(80000);
+    
+    //
+    // powering down SPI Flash to save power
+    //
+    Utils_SpiFlashDeepPowerDown();
+    //
+    // Enter HIBernate mode
+    //
+    MAP_PRCMHibernateEnter();
 }
 
-uint32_t getSysTickDelay(uint32_t delayInSeconds)
+void CalculateHibernateTimeAndHiberate()
 {
-    return delayInSeconds * 5;
+    struct tm timeNow;
+    uint32_t sleepTime;
+    while (!GetTime(&timeNow)) {};
+    UART_PRINT("%s\n", asctime(&timeNow));
+    sleepTime = (60 - timeNow.tm_min)*60;
+    UART_PRINT("Sleeping %u seconds\r", sleepTime);
+    EnterHIBernate(sleepTime);
+    //EnterHIBernate(30);
 }
 
 //*****************************************************************************
@@ -875,7 +909,7 @@ static void SimpleEmail(void *pvParameters)
     lRetVal = Network_IF_InitDriver(ROLE_STA);
     if(lRetVal < 0)
     {
-           UART_PRINT("Failed to start SimpleLink Device\n\r");
+        UART_PRINT("Failed to start SimpleLink Device\n\r");
         LOOP_FOREVER();
     }
 
@@ -893,29 +927,18 @@ static void SimpleEmail(void *pvParameters)
     strcpy(ucUARTBuffer, "01\r");
     lRetVal = UARTCommandHandler(ucUARTBuffer);
 
-    strcpy(ucUARTBuffer, "03,nlbutts@gmail.com, TempReport\r");
+    strcpy(ucUARTBuffer, "03,nlbutts@gmail.com,TempReport\r");
     lRetVal = UARTCommandHandler(ucUARTBuffer);
 
     float irTemp;
     float ambTemp;
     char tempStr[100];
 
-    SysTickIntRegister(SysTickInt);
-    SysTickPeriodSet(16777216);
-    SysTickIntEnable();
-    SysTickEnable();
-
-
-    while(1)
+    if(MAP_PRCMSysResetCauseGet() == PRCM_HIB_EXIT)
     {
-    	uint32_t unixTime = GetTime();
+        DBG_PRINT("HIB: Woken up from Hibernate\n\r");        
 
-    	UART_PRINT("Delaying before next read\r");
-        g_secondCounter = 0;
-        while (g_secondCounter < getSysTickDelay(300)) {};
-    	UART_PRINT("Delay complete\r");
-
-    	int i;
+        int i;
         float avgTemp = 0;
         for (i = 0; i < 100; ++i)
         {
@@ -924,21 +947,19 @@ static void SimpleEmail(void *pvParameters)
             UtilsDelay(6000);
         }
         avgTemp /= 100;
+        struct tm timeNow;
+        while (!GetTime(&timeNow)) {};
         UART_PRINT("IR Temp = %f  Amb Temp = %f\r", irTemp, avgTemp);
-        snprintf(tempStr, 100, "04,IR Temp=%f  Amb Temp=%f\r", irTemp, avgTemp);
+        snprintf(tempStr, 100, "04, %s - IR Temp=%f  Amb Temp=%f\r", asctime(&timeNow), irTemp, avgTemp);
 
         strcpy(ucUARTBuffer, tempStr);
         lRetVal = UARTCommandHandler(ucUARTBuffer);
 
-		strcpy(ucUARTBuffer, "05\r");
-		lRetVal = UARTCommandHandler(ucUARTBuffer);
-		UtilsDelay(600000);
-		if(lRetVal < 0)
-		{
-			UART_PRINT("Failed to parse the command.\r\n");
-			LOOP_FOREVER();
-		}
+        strcpy(ucUARTBuffer, "05\r");
+        lRetVal = UARTCommandHandler(ucUARTBuffer);
+        UtilsDelay(600000);
     }
+    CalculateHibernateTimeAndHiberate();
 }
 
 //*****************************************************************************
@@ -1020,14 +1041,12 @@ void main()
     //
     // Pinmuxing for GPIO,UART
     //
-    PinMuxConfig();
+    PinMuxConfig(TRUE);
 
     //
     // configure LEDs
     //
     GPIO_IF_LedConfigure(LED1|LED2|LED3);
-
-    GPIO_IF_LedOff(MCU_ALL_LED_IND);
 
     #ifndef NOTERM  
     //
@@ -1074,15 +1093,15 @@ void main()
     lRetVal = VStartSimpleLinkSpawnTask(SPAWN_TASK_PRIORITY);
     if(lRetVal < 0)
     {
-    ERR_PRINT(lRetVal);
-    LOOP_FOREVER();
+        ERR_PRINT(lRetVal);
+        LOOP_FOREVER();
     }
 
     lRetVal = osi_MsgQCreate(&g_PBQueue,"PBQueue",sizeof(tPushButtonMsg),1);
     if(lRetVal < 0)
     {
-    ERR_PRINT(lRetVal);
-    LOOP_FOREVER();
+        ERR_PRINT(lRetVal);
+        LOOP_FOREVER();
     }
 
 	lRetVal = osi_TaskCreate(SimpleEmail, (signed char*)"SimpleEmail", \
@@ -1090,8 +1109,8 @@ void main()
                                 NULL, TASK_PRIORITY+1, NULL );
     if(lRetVal < 0)
     {
-    ERR_PRINT(lRetVal);
-    LOOP_FOREVER();
+        ERR_PRINT(lRetVal);
+        LOOP_FOREVER();
     }
 
     osi_start();

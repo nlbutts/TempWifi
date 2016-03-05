@@ -53,7 +53,7 @@
 
 //*****************************************************************************
 void
-PinMuxConfig(void)
+PinMuxConfig(int enableI2C)
 {
     //
     // Enable Peripheral Clocks 
@@ -103,13 +103,17 @@ PinMuxConfig(void)
     //
     MAP_PinTypeUART(PIN_57, PIN_MODE_3);
 
-    //
-    // Configure PIN_01 for I2C0 I2C_SCL
-    //
-    MAP_PinTypeI2C(PIN_01, PIN_MODE_1);
 
-    //
-    // Configure PIN_02 for I2C0 I2C_SDA
-    //
-    MAP_PinTypeI2C(PIN_02, PIN_MODE_1);
+    if(enableI2C)
+    {
+        //
+        // Configure PIN_01 for I2C0 I2C_SCL
+        //
+        MAP_PinTypeI2C(PIN_01, PIN_MODE_1);
+
+        //
+        // Configure PIN_02 for I2C0 I2C_SDA
+        //
+        MAP_PinTypeI2C(PIN_02, PIN_MODE_1);
+    }
 }

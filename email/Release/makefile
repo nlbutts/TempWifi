@@ -6,12 +6,11 @@ SHELL = cmd.exe
 
 CG_TOOL_ROOT := C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.7
 
-GEN_OPTS__FLAG := --cmd_file="C:/projects/cc3200/ti_rtos_config/Default/configPkg/compiler.opt"
-GEN_CMDS__FLAG := -l"C:/projects/cc3200/ti_rtos_config/Default/configPkg/linker.cmd"
+GEN_OPTS__FLAG := --cmd_file="C:/projects/TempWifi/ti_rtos_config/Default/configPkg/compiler.opt"
+GEN_CMDS__FLAG := -l"C:/projects/TempWifi/ti_rtos_config/Default/configPkg/linker.cmd"
 
 ORDERED_OBJS += \
 "./NTPTime.obj" \
-"./Test.obj" \
 "./button_if.obj" \
 "./gpio_if.obj" \
 "./i2c_if.obj" \
@@ -22,6 +21,8 @@ ORDERED_OBJS += \
 "./timer_if.obj" \
 "./tmp006drv.obj" \
 "./uart_if.obj" \
+"./utils_if.obj" \
+"./wdt_if.obj" \
 "../cc3200v1p32.cmd" \
 $(GEN_CMDS__FLAG) \
 -l"libc.a" \
@@ -148,10 +149,10 @@ BIN_OUTPUTS__QUOTED += \
 all: email.out
 
 dependents:
-	-cd C:/projects/cc3200/ti_rtos_config/Default && $(MAKE) all
+	-cd C:/projects/TempWifi/ti_rtos_config/Default && $(MAKE) all
 
 # Tool invocations
-email.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) C:/projects/cc3200/ti_rtos_config/Default/configPkg/linker.cmd
+email.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS) C:/projects/TempWifi/ti_rtos_config/Default/configPkg/linker.cmd
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
 	"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.7/bin/armcl" -mv7M4 --code_state=16 --float_support=vfplib --abi=eabi -me -g --gcc --define=SL_PLATFORM_MULTI_THREADED --define=USE_TIRTOS --define=__CCS__ --define=ccs --define=cc3200 --display_error_number --diag_warning=225 --diag_wrap=off -z -m"email.map" --heap_size=0x8000 --stack_size=0x800 -i"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.7/lib" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-arm_5.2.7/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="email_linkInfo.xml" --rom_model -o "email.out" $(ORDERED_OBJS)
@@ -169,9 +170,8 @@ email.bin: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "Test.pp" 
-	-$(RM) "NTPTime.pp" "button_if.pp" "gpio_if.pp" "i2c_if.pp" "main.pp" "network_if.pp" "pinmux.pp" "smartconfig.pp" "timer_if.pp" "tmp006drv.pp" "uart_if.pp" 
-	-$(RM) "NTPTime.obj" "Test.obj" "button_if.obj" "gpio_if.obj" "i2c_if.obj" "main.obj" "network_if.obj" "pinmux.obj" "smartconfig.obj" "timer_if.obj" "tmp006drv.obj" "uart_if.obj" 
+	-$(RM) "NTPTime.pp" "button_if.pp" "gpio_if.pp" "i2c_if.pp" "main.pp" "network_if.pp" "pinmux.pp" "smartconfig.pp" "timer_if.pp" "tmp006drv.pp" "uart_if.pp" "utils_if.pp" "wdt_if.pp" 
+	-$(RM) "NTPTime.obj" "button_if.obj" "gpio_if.obj" "i2c_if.obj" "main.obj" "network_if.obj" "pinmux.obj" "smartconfig.obj" "timer_if.obj" "tmp006drv.obj" "uart_if.obj" "utils_if.obj" "wdt_if.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
@@ -182,7 +182,7 @@ post-build:
 
 .PHONY: all clean dependents
 .SECONDARY: post-build
-C:/projects/cc3200/ti_rtos_config/Default/configPkg/linker.cmd:
+C:/projects/TempWifi/ti_rtos_config/Default/configPkg/linker.cmd:
 
 -include ../makefile.targets
 

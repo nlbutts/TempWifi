@@ -1,3 +1,3 @@
 #include <time.h>
 
-time_t GetTime();
+uint8_t GetTime(struct tm * decodedTime);

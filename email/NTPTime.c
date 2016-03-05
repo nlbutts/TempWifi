@@ -29,7 +29,7 @@
 //!
 //
 //*****************************************************************************
-static time_t DecodeSNTPTime(char * cDataBuf)
+static void DecodeSNTPTime(char * cDataBuf, struct tm * decodedTime)
 {
   
 /*
@@ -79,8 +79,6 @@ static time_t DecodeSNTPTime(char * cDataBuf)
     char acTimeStore[30];
     char *pcCCPtr;
     unsigned short uisCCLen;
-    struct tm tmn;
-    time_t unixTime = 0;
 
     // Tuesday is the 1st day in 2013 - the relative year
     const char g_acDaysOfWeek2013[7][3] = {{"Tue"},
@@ -140,7 +138,7 @@ static time_t DecodeSNTPTime(char * cDataBuf)
         isGeneralVar = ulElapsedSec/SEC_IN_DAY;
         memcpy(pcCCPtr,
                g_acDaysOfWeek2013[isGeneralVar%7], 3);
-        tmn.tm_wday = (isGeneralVar + 2) % 7;
+        decodedTime->tm_wday = (isGeneralVar + 2) % 7;
         pcCCPtr += 3;
         *pcCCPtr++ = '\x20';
 
@@ -159,7 +157,7 @@ static time_t DecodeSNTPTime(char * cDataBuf)
             iIndex = 0;
         }
         memcpy(pcCCPtr, g_acMonthOfYear[iIndex], 3);
-        tmn.tm_mon = iIndex;
+        decodedTime->tm_mon = iIndex;
         pcCCPtr += 3;
         *pcCCPtr++ = '\x20';
 
@@ -171,7 +169,7 @@ static time_t DecodeSNTPTime(char * cDataBuf)
         uisCCLen = itoa(isGeneralVar + 1, pcCCPtr);
         pcCCPtr += uisCCLen;
         *pcCCPtr++ = '\x20';
-        tmn.tm_mday = isGeneralVar + 1;
+        decodedTime->tm_mday = isGeneralVar + 1;
 
         //
         // time
@@ -187,7 +185,7 @@ static time_t DecodeSNTPTime(char * cDataBuf)
                                    pcCCPtr);
         pcCCPtr += uisCCLen;
         *pcCCPtr++ = ':';
-        tmn.tm_hour = ulGeneralVar;
+        decodedTime->tm_hour = ulGeneralVar;
 
         // number of minutes per hour
         ulGeneralVar = ulGeneralVar1/SEC_IN_MIN;
@@ -202,8 +200,8 @@ static time_t DecodeSNTPTime(char * cDataBuf)
                                    pcCCPtr);
         pcCCPtr += uisCCLen;
         *pcCCPtr++ = '\x20';
-        tmn.tm_min = ulGeneralVar;
-        tmn.tm_sec = ulGeneralVar1;
+        decodedTime->tm_min = ulGeneralVar;
+        decodedTime->tm_sec = ulGeneralVar1;
 
         //
         // year
@@ -216,20 +214,13 @@ static time_t DecodeSNTPTime(char * cDataBuf)
         pcCCPtr += uisCCLen;
 
         *pcCCPtr++ = '\0';
-        tmn.tm_year = (YEAR2013 + ulGeneralVar) - 1900;
-        tmn.tm_isdst = 0;
-        // Correct the unix time for daylight saving and local time
-        unixTime = mktime(&tmn);
-        struct tm * ptr;
-        time_t utcTime = 1456699232;
-        ptr = gmtime(&utcTime);
+        decodedTime->tm_year = (YEAR2013 + ulGeneralVar) - 1900;
+        decodedTime->tm_isdst = 0;
 
         UART_PRINT("response from server: ");
         UART_PRINT(acTimeStore);
-        UART_PRINT("Unix time = %u\r\n", unixTime);
-        //UART_PRINT("\n\r\n\r");
+        UART_PRINT("\n\r\n\r");
     }
-    return unixTime;
 }
 
 //*****************************************************************************
@@ -243,17 +234,16 @@ static time_t DecodeSNTPTime(char * cDataBuf)
 //! \warning
 //
 //*****************************************************************************
-time_t GetTime()
+uint8_t GetTime(struct tm * decodedTime)
 {
     const char * g_acSNTPserver = "wwv.nist.gov"; //Add any one of the above servers
     unsigned long ulDestinationIP;
     int iSocketDesc;
-	long lRetVal;
+    long lRetVal;
     char cDataBuf[48];
     int iAddrSize;
     SlSockAddr_t sAddr;
     SlSockAddrIn_t sLocalAddr;
-    time_t unixTime = 0;
 
     //
     // Create UDP socket
@@ -344,15 +334,11 @@ time_t GetTime()
             //
             close(iSocketDesc);
             UART_PRINT("Socket closed\n\r");
+            return 0;
         }
 
         // We received the time
-        unixTime = DecodeSNTPTime(cDataBuf);
-
-        //
-        // Wait a while before resuming
-        //
-        //MAP_UtilsDelay(SLEEP_TIME);
+        DecodeSNTPTime(cDataBuf, decodedTime);
     }
     else
     {
@@ -364,6 +350,39 @@ time_t GetTime()
     //
     close(iSocketDesc);
     UART_PRINT("Socket closed\n\r");
+    return 1;
+}
 
-    return unixTime;
+void testTime()
+{
+  time_t now1, now2;
+  struct tm * tmPtr;
+  now1 = time(NULL);
+  tmPtr = gmtime(&now1);
+  UART_PRINT("Time now = %u\n", now1);
+  UART_PRINT("Time= %s\n", asctime(tmPtr));
+  UART_PRINT("tm_sec   %d\n", tmPtr->tm_sec  );
+  UART_PRINT("tm_min   %d\n", tmPtr->tm_min  );
+  UART_PRINT("tm_hour  %d\n", tmPtr->tm_hour );
+  UART_PRINT("tm_mday  %d\n", tmPtr->tm_mday );
+  UART_PRINT("tm_mon   %d\n", tmPtr->tm_mon  );
+  UART_PRINT("tm_year  %d\n", tmPtr->tm_year );
+  UART_PRINT("tm_wday  %d\n", tmPtr->tm_wday );
+  UART_PRINT("tm_yday  %d\n", tmPtr->tm_yday );
+  UART_PRINT("tm_isdst %d\n", tmPtr->tm_isdst);
+
+  struct tm tmNow;
+  
+  tmNow.tm_sec   = 0;
+  tmNow.tm_min   = 26;
+  tmNow.tm_hour  = 19;
+  tmNow.tm_mday  = 2;
+  tmNow.tm_mon   = 2;
+  tmNow.tm_year  = 116;
+  tmNow.tm_wday  = 0;
+  tmNow.tm_yday  = 0;
+  tmNow.tm_isdst = 0;
+  now2 = mktime(&tmNow);
+  UART_PRINT("Converted time now = %u\n",  now2);
+  UART_PRINT("now1-now2 = %u", now1-now2);
 }
