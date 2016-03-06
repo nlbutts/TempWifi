@@ -105,11 +105,11 @@ const unsigned char pucUARTParamString2[] ="\f\rsubject - Subject of the Email";
 const unsigned char pucUARTParamString3[] ="\f\rmessage - Content of Email Message \f\r";
 
 // *SMTP* UART-defined config variables for Email Application
-char pcEmailto[25];
+char pcEmailto[30];
 char *pcOfemailto;
-char pcEmailsubject[25];
+char pcEmailsubject[30];
 char *pcOfemailsubject;
-char pcEmailmessage[64];
+char pcEmailmessage[512];
 char *pcOfemailmessage;
 
 // Variable used in Timer Interrupt Handler
@@ -119,7 +119,7 @@ uint32_t g_secondCounter = 0;
 // global variables (UART Buffer, Email Task, Queues Parameters)
 signed char g_cConnectStatus;
 unsigned int uiUartCmd;
-char ucUARTBuffer[200];
+char ucUARTBuffer[512];
 
 // AP Security Parameters
 SlSecParams_t SecurityParams = {0};
@@ -545,6 +545,7 @@ long UARTCommandHandler(char *usBuffer)
                 if((int)usBuffer[iIndex] == 44)
                 {
                     iParamcount++;
+                    UART_PRINT("Found parameter\n");
                 }
                 else
                 {
@@ -552,12 +553,12 @@ long UARTCommandHandler(char *usBuffer)
                     {
                         //Enter destination email address
                         *pcOfemailto++ = usBuffer[iIndex];
-
                     }
                     if(iParamcount==2)
                     {
                         //Enter email subject
                         *pcOfemailsubject++ = usBuffer[iIndex];
+                        UART_PRINT("%s", usBuffer[iIndex]);
                     }
                 }
                 iIndex++;
@@ -567,6 +568,8 @@ long UARTCommandHandler(char *usBuffer)
             *pcOfemailto++= '>';
             *pcOfemailto++= '\0';
             *pcOfemailsubject= '\0';
+
+            UART_PRINT("Subject: %s", pcEmailsubject);
 
             SlNetAppDestination_t destEmailAdd;
             memcpy(destEmailAdd.Email,pcEmailto,strlen(pcEmailto)+1);
@@ -872,10 +875,12 @@ static void SimpleEmail(void *pvParameters)
 
     float irTemp;
     float ambTemp;
-    char tempStr[100];
 
-    if(MAP_PRCMSysResetCauseGet() == PRCM_HIB_EXIT)
+//    if(MAP_PRCMSysResetCauseGet() == PRCM_HIB_EXIT)
+    if(1)
     {
+        JSONMessage msg;
+
         DBG_PRINT("HIB: Woken up from Hibernate\n\r");
 
         int i;
@@ -887,13 +892,15 @@ static void SimpleEmail(void *pvParameters)
             UtilsDelay(6000);
         }
         avgTemp /= 100;
-        struct tm timeNow;
-        while (!GetTime(&timeNow)) {};
-        UART_PRINT("IR Temp = %f  Amb Temp = %f\r", irTemp, avgTemp);
-        snprintf(tempStr, 100, "04, %s - IR Temp=%f  Amb Temp=%f\r", asctime(&timeNow), irTemp, avgTemp);
+//        struct tm timeNow;
+//        while (!GetTime(&timeNow)) {};
+//        snprintf(ucUARTBuffer, 512, "IR Temp=%f  Amb Temp=%f\r", irTemp, avgTemp);
+//        msg.insertMeasurement(asctime(&timeNow), ucUARTBuffer);
+//        std::string json = msg.getJSON();
+//        snprintf(ucUARTBuffer, 512, "04, %s\r", json.c_str());
+//        lRetVal = UARTCommandHandler(ucUARTBuffer);
 
-        strcpy(ucUARTBuffer, tempStr);
-        lRetVal = UARTCommandHandler(ucUARTBuffer);
+        lRetVal = UARTCommandHandler("04, blah\r");
 
         strcpy(ucUARTBuffer, "05\r");
         lRetVal = UARTCommandHandler(ucUARTBuffer);
