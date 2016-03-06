@@ -105,11 +105,13 @@ const unsigned char pucUARTParamString2[] ="\f\rsubject - Subject of the Email";
 const unsigned char pucUARTParamString3[] ="\f\rmessage - Content of Email Message \f\r";
 
 // *SMTP* UART-defined config variables for Email Application
+#define SUBJECT_LEN         30
+#define MESSAGE_LEN         64
 char pcEmailto[30];
 char *pcOfemailto;
-char pcEmailsubject[30];
+char pcEmailsubject[SUBJECT_LEN];
 char *pcOfemailsubject;
-char pcEmailmessage[512];
+char pcEmailmessage[MESSAGE_LEN];
 char *pcOfemailmessage;
 
 // Variable used in Timer Interrupt Handler
@@ -119,7 +121,7 @@ uint32_t g_secondCounter = 0;
 // global variables (UART Buffer, Email Task, Queues Parameters)
 signed char g_cConnectStatus;
 unsigned int uiUartCmd;
-char ucUARTBuffer[512];
+char ucUARTBuffer[MESSAGE_LEN];
 
 // AP Security Parameters
 SlSecParams_t SecurityParams = {0};
@@ -870,14 +872,10 @@ static void SimpleEmail(void *pvParameters)
     strcpy(ucUARTBuffer, "01\r");
     lRetVal = UARTCommandHandler(ucUARTBuffer);
 
-    strcpy(ucUARTBuffer, "03,nlbutts@gmail.com,TempReport\r");
-    lRetVal = UARTCommandHandler(ucUARTBuffer);
-
     float irTemp;
     float ambTemp;
 
-//    if(MAP_PRCMSysResetCauseGet() == PRCM_HIB_EXIT)
-    if(1)
+    if(MAP_PRCMSysResetCauseGet() == PRCM_HIB_EXIT)
     {
         JSONMessage msg;
 
@@ -892,15 +890,14 @@ static void SimpleEmail(void *pvParameters)
             UtilsDelay(6000);
         }
         avgTemp /= 100;
-//        struct tm timeNow;
-//        while (!GetTime(&timeNow)) {};
-//        snprintf(ucUARTBuffer, 512, "IR Temp=%f  Amb Temp=%f\r", irTemp, avgTemp);
-//        msg.insertMeasurement(asctime(&timeNow), ucUARTBuffer);
-//        std::string json = msg.getJSON();
-//        snprintf(ucUARTBuffer, 512, "04, %s\r", json.c_str());
-//        lRetVal = UARTCommandHandler(ucUARTBuffer);
+        struct tm timeNow;
+        while (!GetTime(&timeNow)) {};
 
-        lRetVal = UARTCommandHandler("04, blah\r");
+        snprintf(ucUARTBuffer, SUBJECT_LEN, "03,nlbutts@gmail.com,TempReport");
+        lRetVal = UARTCommandHandler(ucUARTBuffer);
+
+        snprintf(ucUARTBuffer, MESSAGE_LEN, "04,%s, IR=%f AMB=%f", asctime(&timeNow), irTemp, avgTemp);
+        lRetVal = UARTCommandHandler(ucUARTBuffer);
 
         strcpy(ucUARTBuffer, "05\r");
         lRetVal = UARTCommandHandler(ucUARTBuffer);

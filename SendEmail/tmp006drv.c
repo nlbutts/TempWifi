@@ -1,35 +1,35 @@
 //*****************************************************************************
 // tmp006drv.c - Temperature sensor driver APIs.
 //
-// Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/ 
-// 
-// 
-//  Redistribution and use in source and binary forms, with or without 
-//  modification, are permitted provided that the following conditions 
+// Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
+//
+//
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions
 //  are met:
 //
-//    Redistributions of source code must retain the above copyright 
+//    Redistributions of source code must retain the above copyright
 //    notice, this list of conditions and the following disclaimer.
 //
 //    Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the 
-//    documentation and/or other materials provided with the   
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the
 //    distribution.
 //
 //    Neither the name of Texas Instruments Incorporated nor the names of
 //    its contributors may be used to endorse or promote products derived
 //    from this software without specific prior written permission.
 //
-//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-//  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 //  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-//  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
-//  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-//  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
+//  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+//  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+//  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
 //  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
 //  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-//  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-//  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+//  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+//  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 //*****************************************************************************
@@ -47,7 +47,7 @@
 #include "uart_if.h"
 
 //****************************************************************************
-//                      GLOBAL VARIABLES                                   
+//                      GLOBAL VARIABLES
 //****************************************************************************
 
 //*****************************************************************************
@@ -61,9 +61,9 @@
 #define DBG_PRINT               Report
 
 //****************************************************************************
-//                      LOCAL FUNCTION DEFINITIONS                          
+//                      LOCAL FUNCTION DEFINITIONS
 //****************************************************************************
-static int GetRegisterValue(unsigned char ucRegAddr, 
+static int GetRegisterValue(unsigned char ucRegAddr,
                             unsigned short *pusRegValue);
 static double ComputeTemperature(double dVobject, double dTAmbient);
 
@@ -74,8 +74,8 @@ static double ComputeTemperature(double dVobject, double dTAmbient);
 //!
 //! \param ucRegAddr is the offset register address
 //! \param pusRegValue is the pointer to the register value store
-//! 
-//! This function  
+//!
+//! This function
 //!    1. Returns the value in the specified register
 //!
 //! \return 0: Success, < 0: Failure.
@@ -88,7 +88,7 @@ GetRegisterValue(unsigned char ucRegAddr, unsigned short *pusRegValue)
     //
     // Invoke the readfrom I2C API to get the required byte
     //
-    if(I2C_IF_ReadFrom(TMP006_DEV_ADDR, &ucRegAddr, 1, 
+    if(I2C_IF_ReadFrom(TMP006_DEV_ADDR, &ucRegAddr, 1,
                    &ucRegData[0], 2) != 0)
     {
         DBG_PRINT("I2C readfrom failed\n\r");
@@ -105,15 +105,15 @@ GetRegisterValue(unsigned char ucRegAddr, unsigned short *pusRegValue)
 //! Initialize the temperature sensor
 //!
 //! \param None
-//! 
-//! This function  
+//!
+//! This function
 //!    1. Get the device manufacturer and version
 //!    2. Add any initialization here
 //!
 //! \return 0: Success, < 0: Failure.
 //
 //****************************************************************************
-int 
+int
 TMP006DrvOpen()
 {
     unsigned short usManufacID, usDevID, usConfigReg;
@@ -154,8 +154,8 @@ TMP006DrvOpen()
 //!
 //! \param dVobject is the sensor voltage value
 //! \param dTAmbient is the local die temperature
-//! 
-//! This function  
+//!
+//! This function
 //!    1. Computes the temperature from the VObject and TAmbient values
 //!
 //! \return 0: Success, < 0: Failure.
@@ -164,7 +164,7 @@ TMP006DrvOpen()
 double ComputeTemperature(double dVobject, double dTAmbient)
 {
     //
-    // This algo is obtained from 
+    // This algo is obtained from
     // http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
     // #IR_Temperature_Sensor
     //
@@ -190,15 +190,15 @@ double ComputeTemperature(double dVobject, double dTAmbient)
 //! Get the temperature value
 //!
 //! \param pfCurrTemp is the pointer to the temperature value store
-//! 
-//! This function  
+//!
+//! This function
 //!    1. Get the sensor voltage reg and ambient temp reg values
 //!    2. Compute the temperature from the read values
 //!
 //! \return 0: Success, < 0: Failure.
 //
 //****************************************************************************
-int 
+int
 TMP006DrvGetTemp(float *pfCurrTemp, float *ambTemp)
 {
     unsigned short usVObjectRaw, usTAmbientRaw;
@@ -219,11 +219,12 @@ TMP006DrvGetTemp(float *pfCurrTemp, float *ambTemp)
 
     *pfCurrTemp = ComputeTemperature(dVObject, dTAmbient);
     *ambTemp    = dTAmbient;
-    
+
     //
     // Convert to Farenheit
     //
     *pfCurrTemp = ((*pfCurrTemp * 9) / 5) + 32;
+    *ambTemp = ((*ambTemp * 9) / 5) + 32;
 
     return SUCCESS;
 }

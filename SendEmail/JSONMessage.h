@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <string>
-#include <ctime>
+#include <time.h>
 
 namespace Messages {
 
