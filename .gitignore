@@ -1,2 +1,4 @@
 .metadata*
 *.pp
+email/Release/*
+SendEmail/Release/*

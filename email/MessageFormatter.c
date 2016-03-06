@@ -1,7 +1,7 @@
 #include <string.h>
 #include "MessageFormatter.h"
 
-static const char   _Message[1000];
+static char   _Message[1000];
 static uint32_t     _InitializedLength;
 
 void MeasurementInit()
@@ -12,19 +12,19 @@ void MeasurementInit()
 
 void InsertMeasurement(char * measurementTime, char * measurement)
 {
-    if (strlen(Message) > _InitializedLength)
+    if (strlen(_Message) > _InitializedLength)
     {
-        strcat(Message, ",");
+        strcat(_Message, ",");
     }
-    strcat(Message, "\"time\":");
-    strcat(Message, measurementTime);
-    strcat(Message, ",\"temp\":");
-    strcat(Message, measurement);
-    strcat(Message, "}");
+    strcat(_Message, "\"time\":");
+    strcat(_Message, measurementTime);
+    strcat(_Message, ",\"temp\":");
+    strcat(_Message, measurement);
+    strcat(_Message, "}");
 }
 
 void GetJSON(char * json, uint32_t maxSize)
 {
-    strncpy(json, Message, maxSize);
+    strncpy(json, _Message, maxSize);
 }
 
