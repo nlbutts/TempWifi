@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string>
+#include <ctime>
 
 namespace Messages {
 
@@ -10,7 +11,7 @@ public:
     JSONMessage(std::string msg);
 	~JSONMessage();
 
-    void insertMeasurement(std::string measurementTime, std::string measurement);
+    void insertMeasurement(struct tm * ntpTime, float irTemp, float ambTemp);
     std::string getJSON();
 
 private:
