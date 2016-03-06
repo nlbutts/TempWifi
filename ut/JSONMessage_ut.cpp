@@ -27,10 +27,6 @@ TEST(MessageFormatter_Test, InsertData)
     struct tm * tmNow = localtime(&timeNow);
     char * dateTime = asctime(tmNow);
     std::string dateTimeStr(dateTime);
-    if (!dateTimeStr.empty() && dateTimeStr[dateTimeStr.size() - 1] == '\n')
-        dateTimeStr.erase(dateTimeStr.size() - 1);
-    if (!dateTimeStr.empty() && dateTimeStr[dateTimeStr.size() - 1] == '\r')
-        dateTimeStr.erase(dateTimeStr.size() - 1);
 
     std::string str;
 
